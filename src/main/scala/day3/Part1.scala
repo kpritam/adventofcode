@@ -2,13 +2,11 @@ package day3
 
 import java.lang.Integer.{max, min}
 
-import day3.Input.{TestData, data1, data2, data3}
-
 final case class Point(x: Int, y: Int) {
   override def toString: String = s"($x, $y)"
 }
 
-final case class Line(p1: Point, p2: Point) {
+final case class Line(p1: Point, p2: Point, direction: Direction) {
   private val x1: Int = p1.x
   private val x2: Int = p2.x
   private val y1: Int = p1.y
@@ -19,6 +17,13 @@ final case class Line(p1: Point, p2: Point) {
     val b = x1 - x2
     val c = a * x1 + b * y1
     (a, b, c)
+  }
+
+  val steps: Int = direction.steps
+
+  def stepsFromPoint(p: Point): Int = direction match {
+    case _: L | _: R => Math.abs(x1 - p.x)
+    case _: U | _: D => Math.abs(y1 - p.y)
   }
 
   def exist(p: Point): Boolean =
@@ -42,11 +47,12 @@ final case class Line(p1: Point, p2: Point) {
 
 }
 
-sealed abstract class Direction(val point: Point) extends Product with Serializable
-case class U(from: Point, y: Int)                 extends Direction(Point(from.x, from.y + y))
-case class R(from: Point, x: Int)                 extends Direction(Point(from.x + x, from.y))
-case class D(from: Point, y: Int)                 extends Direction(Point(from.x, from.y - y))
-case class L(from: Point, x: Int)                 extends Direction(Point(from.x - x, from.y))
+sealed abstract class Direction(val point: Point, val steps: Int) extends Product with Serializable
+
+final case class U(from: Point, override val steps: Int) extends Direction(Point(from.x, from.y + steps), steps)
+final case class R(from: Point, override val steps: Int) extends Direction(Point(from.x + steps, from.y), steps)
+final case class D(from: Point, override val steps: Int) extends Direction(Point(from.x, from.y - steps), steps)
+final case class L(from: Point, override val steps: Int) extends Direction(Point(from.x - steps, from.y), steps)
 
 final case class Wire(lines: List[Line]) {
   def intersect(other: Wire): List[Point] = {
@@ -55,9 +61,11 @@ final case class Wire(lines: List[Line]) {
       l2 <- other.lines
     } yield (l1, l2)
 
-    linesCartesianProduct.flatMap {
-      case (line1, line2) => line1.intersect(line2)
-    }
+    linesCartesianProduct
+      .flatMap {
+        case (line1, line2) => line1.intersect(line2)
+      }
+      .filterNot(p => p.x == 0 && p.y == 0)
   }
 }
 
@@ -68,25 +76,23 @@ object Wire {
       directions match {
         case Nil => Nil
         case x :: xs =>
-          val nextPoint = x.head match {
-            case 'U' => U(from, x.tail.toInt).point
-            case 'R' => R(from, x.tail.toInt).point
-            case 'D' => D(from, x.tail.toInt).point
-            case 'L' => L(from, x.tail.toInt).point
+          val dir = x.head match {
+            case 'U' => U(from, x.tail.toInt)
+            case 'R' => R(from, x.tail.toInt)
+            case 'D' => D(from, x.tail.toInt)
+            case 'L' => L(from, x.tail.toInt)
             case d   => throw new RuntimeException(s"Invalid direction: $d provided")
           }
-          Line(from, nextPoint) :: go(nextPoint, xs)
+          Line(from, dir.point, dir) :: go(dir.point, xs)
       }
 
     val seed = Point(0, 0)
     Wire(go(seed, directions))
   }
-
 }
 
-object Part1 extends App {
-
-  private def run(wire1: List[String], wire2: List[String]): Int = {
+object Part1 {
+  def run(wire1: List[String], wire2: List[String]): Int = {
     val intersectingPoints: List[Point] = Wire.from(wire1).intersect(Wire.from(wire2))
 
     intersectingPoints
@@ -94,17 +100,4 @@ object Part1 extends App {
       .filterNot(_ == 0)
       .min
   }
-
-  private def runTest(testData: TestData): Unit = {
-    val output = run(testData.wire1, testData.wire2)
-    assert(output == testData.expectedResult, s"Expected output = ${testData.expectedResult} but Actual output = $output")
-  }
-
-  List(data1, data2, data3).foreach(runTest)
-  println("All tests passed!")
-
-  val output = run(Input.mainInput1, Input.mainInput2)
-  println("==========================")
-  println(s"Final Answer = $output")
-  println("==========================")
 }

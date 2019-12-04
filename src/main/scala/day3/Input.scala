@@ -1,7 +1,7 @@
 package day3
 
 object Input {
-  final case class TestData(wire1: List[String], wire2: List[String], expectedResult: Int)
+  final case class TestData(wire1: List[String], wire2: List[String], expectedResultPart1: Int, expectedResultPart2: Int)
 
   private val wire1 = List("R98", "U47", "R26", "D63", "R33", "U87", "L62", "D20", "R33", "U53", "R51")
   private val wire2 = List("U98", "R91", "D20", "R16", "D67", "R40", "U7", "R15", "U6", "R7")
@@ -12,9 +12,9 @@ object Input {
   private val wire5 = List("R8", "U5", "L5", "D3")
   private val wire6 = List("U7", "R6", "D4", "L4")
 
-  val data1: TestData = TestData(wire1, wire2, 135)
-  val data2: TestData = TestData(wire3, wire4, 159)
-  val data3: TestData = TestData(wire5, wire6, 6)
+  val data1: TestData = TestData(wire1, wire2, 135, 410)
+  val data2: TestData = TestData(wire3, wire4, 159, 610)
+  val data3: TestData = TestData(wire5, wire6, 6, 30)
 
   val mainInput1: List[String] =
     List(
