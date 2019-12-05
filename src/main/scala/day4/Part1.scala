@@ -2,10 +2,13 @@ package day4
 
 import java.util.regex.Pattern
 
-object Part1 extends App {
-  private val passwords1: List[String] = new Checker(235741, 706948).matchingPasswords
+import scala.collection.mutable
 
-  println(passwords1.length)
+object Part1 extends App {
+  private val passwords: List[String] = new Checker(235741, 706948).matchingPasswords
+
+  passwords.foreach(println)
+  println(passwords.length)
 
 }
 
@@ -25,25 +28,30 @@ class Checker(rangeFrom: Int, rangeTo: Int) {
   def withinRange(password: String): Boolean       = password.toInt > rangeFrom && password.toInt < rangeTo
   def twoAdjacentDigits(password: String): Boolean = twoAdjacentDigitsMatcher.matcher(password).matches()
   def twoAdjacentDigitsStrict(password: String): Boolean = {
-    var last: Option[Int] = None
-    var currentIndex      = 0
-    val digits            = password.toCharArray.map(_.asDigit)
+    val digits = password.toCharArray.map(_.asDigit).toList
+    val stack  = mutable.Stack.empty[Int]
+    var flag   = false
 
-    digits
-      .sliding(3)
-      .map { xs =>
-        val b = xs.toList match {
-          case List(x, y, z) if x == y && y != z                                      => if (last.isDefined) last.get != x else true
-          case List(x, y, z) if x != y && y == z && currentIndex + 3 == digits.length => true
-          case List(x, y) if x == y                                                   => if (last.isDefined) last.get != x else true
-          case List(x) if last.isDefined && last.get == x                             => true
-          case _                                                                      => false
-        }
-        currentIndex += 1
-        last = xs.headOption
-        b
-      }
-      .exists(x => x)
+    def popPush(elm: Int) = {
+      stack.pop()
+      stack.push(elm)
+    }
+
+    def clearPush(elm: Int) = {
+      stack.clear()
+      stack.push(elm)
+    }
+
+    digits.foreach { d =>
+      if (stack.isEmpty) stack.push(d)
+      else if (stack.size == 1 && stack.top == d) stack.push(d)
+      else if (stack.size == 1 && stack.top != d) popPush(d)
+      else if (stack.size == 2 && stack.top == d) stack.push(d)
+      else if (stack.size == 2 && stack.top != d) flag = true
+      else if (stack.size == 3 && stack.top != d) clearPush(d)
+    }
+
+    stack.size == 2 || flag
   }
   def increasingOrder(password: String): Boolean = password.toSeq.sorted.unwrap == password
 }
